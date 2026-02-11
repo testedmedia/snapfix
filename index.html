@@ -651,11 +651,15 @@
     function handleSignup(e) {
         e.preventDefault();
         const email = e.target.querySelector('input[type="email"]').value;
-        // Store email for confirmed page
         sessionStorage.setItem('snapfix_email', email);
-        // In production, POST to your API here
-        console.log('Waitlist signup:', email);
-        window.location.href = 'confirmed.html';
+        // POST to API, redirect regardless of outcome (graceful degradation)
+        fetch('/api/waitlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        }).catch(() => {}).finally(() => {
+            window.location.href = 'confirmed.html';
+        });
     }
 
     // Smooth scroll
