@@ -1,6 +1,8 @@
 import { randomUUID } from 'crypto';
 import type { Options, Session, LoopEntry, AIFix } from './types.js';
 import { runCommand, runFixCommand } from './runner.js';
+import { applyFileEdits } from './file-editor.js';
+import { enhanceFix } from './fix-enhancer.js';
 import { detect } from './detector.js';
 import { collectContext, buildDebugContext } from './context.js';
 import { createProviderFromConfig } from './ai/index.js';
@@ -97,6 +99,8 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
         try {
           ui.showThinking();
           fix = await getAI().diagnose(debugCtx);
+          // Smart enhance: auto-generate file edits for common patterns
+          fix = enhanceFix(fix, detection.lines);
           ui.showFix(fix);
         } catch (err: any) {
           ui.showApiError(err.message);
@@ -104,9 +108,9 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
           break;
         }
 
-        // 7. Empty fix command = AI is stuck
-        if (!fix.fix_command) {
-          console.log('  AI could not suggest a fix command.');
+        // 7. Empty fix = AI is stuck
+        if (!fix.fix_command && (!fix.file_edits || fix.file_edits.length === 0)) {
+          console.log('  AI could not suggest a fix.');
           session.status = 'failed';
           break;
         }
@@ -171,12 +175,32 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
         }
 
         // Apply the AI fix
-        ui.showApplying(fix.fix_command);
-        const fixResult = await runFixCommand(fix.fix_command);
+        let fixSuccess = true;
+
+        // Apply file edits first (if any)
+        if (fix.file_edits && fix.file_edits.length > 0) {
+          ui.showApplyingEdits(fix.file_edits);
+          const editResult = await applyFileEdits(fix.file_edits);
+          if (editResult.exitCode !== 0) {
+            fixSuccess = false;
+            console.log(`  ${editResult.stderr}`);
+          } else {
+            console.log(`  ${editResult.stdout}`);
+          }
+          previousFixes.push(`[file edits: ${fix.file_edits.map(e => e.file_path).join(', ')}]`);
+        }
+
+        // Then run command (if any)
+        if (fix.fix_command) {
+          ui.showApplying(fix.fix_command);
+          const cmdResult = await runFixCommand(fix.fix_command);
+          fixSuccess = fixSuccess && cmdResult.exitCode === 0;
+          previousFixes.push(fix.fix_command);
+        }
+
         entry.fixApplied = true;
-        entry.fixResult = fixResult.exitCode === 0 ? 'applied' : 'fix_failed';
-        previousFixes.push(fix.fix_command);
-        ui.showFixResult(fixResult.exitCode === 0);
+        entry.fixResult = fixSuccess ? 'applied' : 'fix_failed';
+        ui.showFixResult(fixSuccess);
         session.loops.push(entry);
       }
     }

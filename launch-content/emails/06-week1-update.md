@@ -30,6 +30,6 @@ One week in. Here's everything, no filter:
 
 We're building this in public because that's how trust works. If you have feedback, bugs, or feature requests: reply to this email or open a GitHub issue.
 
-Star it if you haven't: https://github.com/snapfix-dev/snapfix
+Star it if you haven't: https://github.com/testedmedia/snapfix
 
 -- The SnapFix team

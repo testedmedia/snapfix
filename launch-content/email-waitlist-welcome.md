@@ -35,7 +35,7 @@ Free tier uses local LLMs (Ollama) - zero cost, works offline.
 **Why I built this:**
 I got tired of taking 40+ screenshots per failed `npm install` and manually pasting them into ChatGPT. So I automated the entire loop. If you've ever rage-quit an install at 2am, you'll get it.
 
-GitHub: https://github.com/snapfix/cli
+GitHub: https://github.com/testedmedia/snapfix
 Landing: https://snapfix.dev
 
 Questions? Just reply to this email.

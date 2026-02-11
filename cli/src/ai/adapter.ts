@@ -14,7 +14,7 @@ export function parseAIResponse(raw: string): AIFix {
 
   try {
     const parsed = JSON.parse(cleaned);
-    return {
+    const fix: AIFix = {
       diagnosis: parsed.diagnosis || 'Unable to determine root cause',
       fix_command: parsed.fix_command || '',
       fix_explanation: parsed.fix_explanation || '',
@@ -22,6 +22,14 @@ export function parseAIResponse(raw: string): AIFix {
       risk: ['low', 'medium', 'high'].includes(parsed.risk) ? parsed.risk : 'medium',
       alternative: parsed.alternative || undefined,
     };
+    if (Array.isArray(parsed.file_edits) && parsed.file_edits.length > 0) {
+      fix.file_edits = parsed.file_edits.map((e: any) => ({
+        file_path: e.file_path || '',
+        search: e.search || '',
+        replace: e.replace || '',
+      })).filter((e: any) => e.file_path);
+    }
+    return fix;
   } catch {
     // If AI returned plain text instead of JSON, try to extract a command
     const cmdMatch = cleaned.match(/`([^`]+)`/);

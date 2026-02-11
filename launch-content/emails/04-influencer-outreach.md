@@ -20,7 +20,7 @@ I'd love to offer you:
 No pressure, no strings. If you try it and don't like it, no worries. If you do, a mention or review would be huge for us.
 
 Install: `npm install -g snapfix`
-GitHub: https://github.com/snapfix-dev/snapfix
+GitHub: https://github.com/testedmedia/snapfix
 
 Cheers,
 [NAME]

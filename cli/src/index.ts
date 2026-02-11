@@ -15,7 +15,7 @@ program
   .argument('[command...]', 'Command to debug (e.g., npm install)')
   .option('--auto', 'Auto-apply fixes without confirmation')
   .option('--max-loops <n>', 'Maximum debug iterations', '25')
-  .option('--ai <provider>', 'AI provider: claude, openai, ollama')
+  .option('--ai <provider>', 'AI provider: ollama (free), groq (free), gemini (free), openai, claude')
   .option('--model <model>', 'AI model to use')
   .option('--key <apikey>', 'API key (or use config/env)')
   .option('--report', 'Generate debug report after session')

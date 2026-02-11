@@ -435,7 +435,7 @@ npm install -g snapfix
 snapfix npm install  # or any other command
 ```
 
-Repo: https://github.com/snapfix/cli
+Repo: https://github.com/testedmedia/snapfix
 
 ---
 

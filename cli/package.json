@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "description": "Autopilot for installation debugging. Stop screenshotting errors.",
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "snapfix": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --target node20 --dts --clean",
     "dev": "tsx src/index.ts",
@@ -16,6 +21,15 @@
     "terminal", "npm", "pip", "brew", "developer-tools",
     "automation", "claude", "openai", "ollama"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/testedmedia/snapfix.git",
+    "directory": "cli"
+  },
+  "homepage": "https://github.com/testedmedia/snapfix#readme",
+  "bugs": {
+    "url": "https://github.com/testedmedia/snapfix/issues"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=20"
@@ -23,16 +37,12 @@
   "dependencies": {
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
-    "node-pty": "^1.0.0",
-    "ora": "^8.1.0",
-    "inquirer": "^9.3.0",
     "strip-ansi": "^7.1.0"
   },
   "devDependencies": {
     "tsup": "^8.2.0",
     "tsx": "^4.19.0",
     "typescript": "^5.5.0",
-    "@types/node": "^22.0.0",
-    "@types/inquirer": "^9.0.0"
+    "@types/node": "^22.0.0"
   }
 }

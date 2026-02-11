@@ -21,7 +21,7 @@ We're open source (MIT), 100% free tier, and growing fast ([X] GitHub stars in [
 
 Happy to jump on a 15-min call or just trade tweets.
 
-GitHub: https://github.com/snapfix-dev/snapfix
+GitHub: https://github.com/testedmedia/snapfix
 Site: https://snapfix.dev
 
 Best,

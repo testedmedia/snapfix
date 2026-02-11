@@ -39,6 +39,12 @@ export interface DebugContext {
   loopNumber: number;
 }
 
+export interface FileEdit {
+  file_path: string;
+  search: string;
+  replace: string;
+}
+
 export interface AIFix {
   diagnosis: string;
   fix_command: string;
@@ -46,6 +52,7 @@ export interface AIFix {
   confidence: number;
   risk: 'low' | 'medium' | 'high';
   alternative?: string;
+  file_edits?: FileEdit[];
 }
 
 export interface LoopEntry {

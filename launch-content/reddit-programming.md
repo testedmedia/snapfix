@@ -51,7 +51,7 @@ At the end, it generates a markdown report showing the entire debug journey: eve
 
 5. **Structured output parsing** - AI responses are structured JSON. If parsing fails, fallback to regex extraction of commands from freeform text.
 
-**Open source (MIT):** github.com/snapfix/cli
+**Open source (MIT):** github.com/testedmedia/snapfix
 
 **Install:** `npm install -g snapfix`
 

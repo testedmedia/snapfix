@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import type { AIFix, Detection } from '../types.js';
+import type { AIFix, Detection, FileEdit } from '../types.js';
 
 const LOGO = chalk.hex('#FF6B35').bold('snapfix');
 
@@ -46,7 +46,14 @@ export function showFix(fix: AIFix): void {
   console.log(`  ${chalk.hex('#FF6B35').bold('DIAGNOSIS:')} ${fix.diagnosis}`);
   console.log('');
   console.log(`  ${chalk.white.bold('Suggested fix:')}`);
-  console.log(`  ${chalk.bgGray.white(` ${fix.fix_command} `)}`);
+  if (fix.file_edits && fix.file_edits.length > 0) {
+    for (const edit of fix.file_edits) {
+      console.log(`  ${chalk.cyan('EDIT')} ${chalk.white(edit.file_path)}: ${chalk.red(edit.search.slice(0, 30))} -> ${chalk.green(edit.replace.slice(0, 30))}`);
+    }
+  }
+  if (fix.fix_command) {
+    console.log(`  ${chalk.bgGray.white(` ${fix.fix_command} `)}`);
+  }
   console.log('');
   console.log(`  ${chalk.dim(fix.fix_explanation)}`);
   console.log(`  ${chalk.dim('Confidence:')} ${confColor(`${Math.round(fix.confidence * 100)}%`)}  ${chalk.dim('Risk:')} ${riskColor(fix.risk)}`);
@@ -55,6 +62,13 @@ export function showFix(fix: AIFix): void {
     console.log(`  ${chalk.dim('Alternative:')} ${fix.alternative}`);
   }
   console.log('');
+}
+
+export function showApplyingEdits(edits: FileEdit[]): void {
+  console.log(`  ${chalk.hex('#FF6B35')('>')} ${chalk.dim('Applying file edits:')}`);
+  for (const edit of edits) {
+    console.log(`    ${chalk.cyan(edit.file_path)}: "${chalk.red(edit.search.slice(0, 30))}" -> "${chalk.green(edit.replace.slice(0, 30))}"`);
+  }
 }
 
 export function showApplying(command: string): void {

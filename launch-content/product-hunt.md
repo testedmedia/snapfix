@@ -48,7 +48,7 @@ The free version uses Ollama (local, $0 cost). Pro tier lets you bring your own 
 - Error detection patterns (any edge cases I'm missing?)
 - UX flow (is the approval step annoying or necessary?)
 
-Open source (MIT): https://github.com/snapfix/cli
+Open source (MIT): https://github.com/testedmedia/snapfix
 
 Try it: `npm install -g snapfix`
 

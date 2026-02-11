@@ -33,7 +33,7 @@ The paid Pro tier ($15/mo) adds unlimited loops, Claude/GPT integration with you
 
 I built this because I was spending 30-90 minutes per failed install manually screenshotting and pasting. Now it's one command.
 
-Repo: https://github.com/snapfix/cli
+Repo: https://github.com/testedmedia/snapfix
 Try it: `npm install -g snapfix`
 
 Would love feedback from the HN crowd - especially on the AI prompt engineering (that's the highest leverage part) and error detection patterns.

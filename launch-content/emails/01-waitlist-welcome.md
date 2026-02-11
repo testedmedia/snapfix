@@ -28,7 +28,7 @@ It wraps any CLI command and auto-fixes errors with AI. No more screenshotting e
 
 Pro launches in 2 weeks. You'll be first to know.
 
-Star it: https://github.com/snapfix-dev/snapfix
+Star it: https://github.com/testedmedia/snapfix
 
 -- The SnapFix team
 

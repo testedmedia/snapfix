@@ -9,8 +9,8 @@ const REPORTS_DIR = join(CONFIG_DIR, 'reports');
 
 const DEFAULT_CONFIG: Config = {
   ai: {
-    provider: 'claude',
-    model: 'claude-sonnet-4-5-20250929',
+    provider: 'ollama',
+    model: 'llama3.2:3b',
     apiKey: '',
     maxTokens: 1024,
     temperature: 0.3,
@@ -88,12 +88,32 @@ export function resolveApiKey(cliKey: string | undefined, config: Config): strin
   if (config.ai.apiKey) return config.ai.apiKey;
   const envMap: Record<string, string> = {
     claude: 'ANTHROPIC_API_KEY',
+    anthropic: 'ANTHROPIC_API_KEY',
     openai: 'OPENAI_API_KEY',
+    gpt: 'OPENAI_API_KEY',
+    groq: 'GROQ_API_KEY',
+    gemini: 'GEMINI_API_KEY',
+    google: 'GEMINI_API_KEY',
+    openrouter: 'OPENROUTER_API_KEY',
     ollama: '',
+    local: '',
   };
   const envVar = envMap[config.ai.provider];
   if (envVar && process.env[envVar]) return process.env[envVar]!;
   return '';
+}
+
+// Auto-detect the best available provider from env vars (zero config)
+// Priority: free providers first, then paid
+export function autoDetectProvider(): { provider: string; key: string } | null {
+  // Free providers first
+  if (process.env.GROQ_API_KEY) return { provider: 'groq', key: process.env.GROQ_API_KEY };
+  if (process.env.GEMINI_API_KEY) return { provider: 'gemini', key: process.env.GEMINI_API_KEY };
+  // Paid providers as fallback
+  if (process.env.OPENROUTER_API_KEY) return { provider: 'openrouter', key: process.env.OPENROUTER_API_KEY };
+  if (process.env.OPENAI_API_KEY) return { provider: 'openai', key: process.env.OPENAI_API_KEY };
+  if (process.env.ANTHROPIC_API_KEY) return { provider: 'claude', key: process.env.ANTHROPIC_API_KEY };
+  return null;
 }
 
 function deepMerge(target: any, source: any): any {

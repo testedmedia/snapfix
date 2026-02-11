@@ -89,7 +89,7 @@ Try it now:
 
 `npm install -g snapfix`
 
-Or check the repo: github.com/snapfix/cli
+Or check the repo: github.com/testedmedia/snapfix
 
 Star it if you've ever rage-quit an install at 2am.
 

@@ -51,7 +51,7 @@ npm install -g snapfix
 snapfix npm install  # try it on your cursed project
 ```
 
-Repo: https://github.com/snapfix/cli
+Repo: https://github.com/testedmedia/snapfix
 
 No more:
 - "It works on my machine" (debug report shows exactly what was fixed)
