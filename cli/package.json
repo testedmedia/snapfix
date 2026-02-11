@@ -1,7 +1,7 @@
 {
   "name": "snapfix",
   "version": "1.0.0",
-  "description": "Autopilot for installation debugging. Stop screenshotting errors.",
+  "description": "Autocorrect for your terminal. Paste a broken command, get it fixed.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
