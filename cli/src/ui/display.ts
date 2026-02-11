@@ -1,37 +1,33 @@
 import chalk from 'chalk';
 import type { AIFix, Detection, FileEdit } from '../types.js';
 
-const LOGO = chalk.hex('#FF6B35').bold('snapfix');
+const BRAND = chalk.hex('#FF6B35');
 
 export function showBanner(command: string): void {
   console.log('');
-  console.log(`  ${LOGO} ${chalk.dim('v1.0.0')}`);
-  console.log(`  ${chalk.dim('Command:')} ${chalk.white(command)}`);
-  console.log(`  ${chalk.dim('─'.repeat(50))}`);
+  console.log(`  ${BRAND.bold('snapfix')} ${chalk.dim('·')} ${chalk.white(command)}`);
   console.log('');
 }
 
 export function showLoopHeader(loop: number, maxLoops: number): void {
-  const bar = chalk.hex('#FF6B35')(`[Loop ${loop}/${maxLoops}]`);
-  console.log('');
-  console.log(`  ${bar} ${chalk.dim('Running command...')}`);
-  console.log(`  ${chalk.dim('─'.repeat(50))}`);
+  if (loop === 1) {
+    console.log(`  ${chalk.dim('Running...')}`);
+  } else {
+    console.log(`  ${chalk.dim(`Retry ${loop}/${maxLoops}...`)}`);
+  }
 }
 
 export function showError(detection: Detection): void {
-  console.log('');
-  const conf = Math.round(detection.confidence * 100);
-  console.log(`  ${chalk.red.bold('ERROR DETECTED')} ${chalk.dim(`(${detection.pattern}, ${conf}% confidence)`)}`);
-  if (detection.lines.length > 0) {
-    console.log(`  ${chalk.dim('Key lines:')}`);
-    for (const line of detection.lines.slice(-5)) {
-      console.log(`  ${chalk.red('>')} ${chalk.dim(line.slice(0, 120))}`);
-    }
+  // Show just the most important error line, not a wall of text
+  const key = detection.lines.filter(l => /error|ERR!|not found|failed|denied/i.test(l));
+  const best = key.length > 0 ? key[key.length - 1] : detection.lines[detection.lines.length - 1];
+  if (best) {
+    console.log(`  ${chalk.red('✗')} ${chalk.dim(best.slice(0, 100))}`);
   }
 }
 
 export function showThinking(): void {
-  process.stdout.write(`\n  ${chalk.hex('#FF6B35')('>')} ${chalk.dim('Analyzing error...')} `);
+  process.stdout.write(`  ${BRAND('⟳')} ${chalk.dim('Diagnosing...')} `);
 }
 
 export function clearThinking(): void {
@@ -40,93 +36,72 @@ export function clearThinking(): void {
 
 export function showFix(fix: AIFix): void {
   clearThinking();
-  const confColor = fix.confidence >= 0.8 ? chalk.green : fix.confidence >= 0.5 ? chalk.yellow : chalk.red;
-  const riskColor = fix.risk === 'low' ? chalk.green : fix.risk === 'medium' ? chalk.yellow : chalk.red;
+  console.log(`  ${BRAND('▸')} ${fix.diagnosis}`);
 
-  console.log(`  ${chalk.hex('#FF6B35').bold('DIAGNOSIS:')} ${fix.diagnosis}`);
-  console.log('');
-  console.log(`  ${chalk.white.bold('Suggested fix:')}`);
   if (fix.file_edits && fix.file_edits.length > 0) {
     for (const edit of fix.file_edits) {
-      console.log(`  ${chalk.cyan('EDIT')} ${chalk.white(edit.file_path)}: ${chalk.red(edit.search.slice(0, 30))} -> ${chalk.green(edit.replace.slice(0, 30))}`);
+      console.log(`    ${chalk.cyan('edit')} ${edit.file_path}: ${chalk.red(edit.search.slice(0, 30))} → ${chalk.green(edit.replace.slice(0, 30))}`);
     }
   }
   if (fix.fix_command) {
-    console.log(`  ${chalk.bgGray.white(` ${fix.fix_command} `)}`);
+    console.log(`    ${chalk.cyan('run')}  ${fix.fix_command}`);
   }
-  console.log('');
-  console.log(`  ${chalk.dim(fix.fix_explanation)}`);
-  console.log(`  ${chalk.dim('Confidence:')} ${confColor(`${Math.round(fix.confidence * 100)}%`)}  ${chalk.dim('Risk:')} ${riskColor(fix.risk)}`);
-
-  if (fix.alternative) {
-    console.log(`  ${chalk.dim('Alternative:')} ${fix.alternative}`);
-  }
-  console.log('');
 }
 
 export function showApplyingEdits(edits: FileEdit[]): void {
-  console.log(`  ${chalk.hex('#FF6B35')('>')} ${chalk.dim('Applying file edits:')}`);
   for (const edit of edits) {
-    console.log(`    ${chalk.cyan(edit.file_path)}: "${chalk.red(edit.search.slice(0, 30))}" -> "${chalk.green(edit.replace.slice(0, 30))}"`);
+    console.log(`  ${chalk.cyan('✎')} ${edit.file_path}`);
   }
 }
 
 export function showApplying(command: string): void {
-  console.log(`  ${chalk.hex('#FF6B35')('>')} ${chalk.dim('Applying fix:')} ${command}`);
-  console.log(`  ${chalk.dim('─'.repeat(50))}`);
+  console.log(`  ${chalk.cyan('$')} ${chalk.dim(command)}`);
 }
 
 export function showFixResult(success: boolean): void {
   if (success) {
-    console.log(`  ${chalk.green('>')} Fix applied successfully`);
+    console.log(`  ${chalk.green('✓')} Fix applied`);
   } else {
-    console.log(`  ${chalk.yellow('>')} Fix command returned error (continuing to next loop)`);
+    console.log(`  ${chalk.yellow('~')} Fix applied (may need another pass)`);
   }
 }
 
 export function showSuccess(loops: number, startedAt: Date): void {
   const elapsed = formatDuration(Date.now() - startedAt.getTime());
   console.log('');
-  console.log(`  ${chalk.green.bold('SUCCESS')} ${chalk.dim('after')} ${chalk.white.bold(String(loops))} ${chalk.dim(loops === 1 ? 'attempt' : 'attempts')} ${chalk.dim('in')} ${chalk.white(elapsed)}`);
+  console.log(`  ${chalk.green.bold('✅ Fixed')} ${chalk.dim('in')} ${chalk.white(elapsed)} ${chalk.dim(`(${loops} ${loops === 1 ? 'attempt' : 'attempts'})`)}`);
   console.log('');
 }
 
 export function showMaxLoops(maxLoops: number): void {
   console.log('');
-  console.log(`  ${chalk.yellow.bold('MAX LOOPS REACHED')} ${chalk.dim(`(${maxLoops} attempts)`)}`);
-  console.log(`  ${chalk.dim('The command could not be fixed automatically.')}`);
-  console.log(`  ${chalk.dim('Try running with')} ${chalk.white('--max-loops 50')} ${chalk.dim('or debug manually.')}`);
+  console.log(`  ${chalk.yellow('⚠')}  Couldn't fix after ${maxLoops} attempts.`);
+  console.log(`     ${chalk.dim('Try:')} snapfix --ai openai "your command"  ${chalk.dim('(smarter model)')}`);
   console.log('');
 }
 
 export function showAbort(): void {
-  console.log('');
-  console.log(`  ${chalk.yellow.bold('ABORTED')} ${chalk.dim('by user')}`);
-  console.log('');
+  console.log(`  ${chalk.dim('Stopped.')}`);
 }
 
 export function showApiError(err: string): void {
-  console.log(`  ${chalk.red('>')} AI error: ${err}`);
-  console.log(`  ${chalk.dim('  Check your API key:')} snapfix config set ai.apiKey YOUR_KEY`);
+  console.log(`  ${chalk.red('✗')} AI error: ${err}`);
 }
 
 export function showReportSaved(path: string): void {
-  console.log(`  ${chalk.dim('Report saved:')} ${chalk.underline(path)}`);
+  console.log(`  ${chalk.dim('Report:')} ${path}`);
 }
 
 export function showNoApiKey(provider: string): void {
   console.log('');
-  console.log(`  ${chalk.red.bold('No API key configured')}`);
+  console.log(`  ${chalk.red('✗')} No API key for ${provider}`);
   console.log('');
-  console.log(`  Set your ${provider} API key:`);
-  console.log(`  ${chalk.white(`snapfix config set ai.apiKey YOUR_KEY`)}`);
+  console.log(`  ${chalk.white('Free options (no key needed):')}`);
+  console.log(`    snapfix --ai ollama "your command"  ${chalk.dim('(local, requires Ollama)')}`);
   console.log('');
-  console.log(`  Or use environment variable:`);
-  const envVar = provider === 'claude' ? 'ANTHROPIC_API_KEY' : 'OPENAI_API_KEY';
-  console.log(`  ${chalk.white(`export ${envVar}=YOUR_KEY`)}`);
-  console.log('');
-  console.log(`  Or use Ollama (free, local):`);
-  console.log(`  ${chalk.white('snapfix --ai ollama npm install')}`);
+  console.log(`  ${chalk.white('Free with key:')}`);
+  console.log(`    export GROQ_API_KEY=...   ${chalk.dim('(free at console.groq.com)')}`);
+  console.log(`    export GEMINI_API_KEY=... ${chalk.dim('(free at aistudio.google.com)')}`);
   console.log('');
 }
 

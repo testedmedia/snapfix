@@ -6,7 +6,7 @@ import type { RunResult, SystemContext, DebugContext } from './types.js';
 
 function tryExec(cmd: string): string {
   try {
-    return execSync(cmd, { timeout: 5_000, encoding: 'utf-8' }).trim();
+    return execSync(cmd, { timeout: 5_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
   } catch {
     return '';
   }

@@ -72,8 +72,8 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
       loopCount++;
       ui.showLoopHeader(loopCount, maxLoops);
 
-      // 1. Run the command
-      const result = await runCommand(command, timeout);
+      // 1. Run the command (quietly - we just need the output for analysis)
+      const result = await runCommand(command, timeout, { quiet: !options.verbose });
 
       // 2. Detect outcome
       const detection = detect(result);
@@ -132,7 +132,6 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
         let action: string;
         if (autoApply && fix.risk !== 'high') {
           action = 'apply';
-          console.log(`  ${'\x1b[90m'}Auto-applying (--auto mode)...\x1b[0m`);
         } else {
           action = await askApproval();
         }
@@ -183,9 +182,6 @@ export async function debugLoop(command: string, options: Options): Promise<Sess
           const editResult = await applyFileEdits(fix.file_edits);
           if (editResult.exitCode !== 0) {
             fixSuccess = false;
-            console.log(`  ${editResult.stderr}`);
-          } else {
-            console.log(`  ${editResult.stdout}`);
           }
           previousFixes.push(`[file edits: ${fix.file_edits.map(e => e.file_path).join(', ')}]`);
         }

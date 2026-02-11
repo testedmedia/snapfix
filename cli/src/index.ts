@@ -10,21 +10,32 @@ const program = new Command();
 
 program
   .name('snapfix')
-  .description('Autopilot for installation debugging. Stop screenshotting errors.')
+  .description('Paste a broken command. Get it fixed. That\'s it.')
   .version('1.0.0')
-  .argument('[command...]', 'Command to debug (e.g., npm install)')
-  .option('--auto', 'Auto-apply fixes without confirmation')
-  .option('--max-loops <n>', 'Maximum debug iterations', '25')
-  .option('--ai <provider>', 'AI provider: ollama (free), groq (free), gemini (free), openai, claude')
-  .option('--model <model>', 'AI model to use')
-  .option('--key <apikey>', 'API key (or use config/env)')
-  .option('--report', 'Generate debug report after session')
-  .option('--verbose', 'Show full AI reasoning')
-  .option('--dry-run', 'Show AI suggestions without applying')
+  .argument('[command...]', 'The broken command (e.g., npm install)')
+  .option('-i, --interactive', 'Ask before applying each fix')
+  .option('--max-loops <n>', 'Max fix attempts', '10')
+  .option('--ai <provider>', 'AI: ollama (free), groq (free), gemini (free), openai, claude')
+  .option('--model <model>', 'AI model override')
+  .option('--key <apikey>', 'API key (or use env var)')
+  .option('--dry-run', 'Show fixes without applying them')
+  .option('--verbose', 'Show full debug details')
   .option('--timeout <ms>', 'Command timeout in ms', '300000')
   .action(async (args: string[], opts) => {
     if (args.length === 0) {
-      program.help();
+      console.log('');
+      console.log(`  ${chalk.hex('#FF6B35').bold('snapfix')} ${chalk.dim('- paste a broken command, get it fixed')}`);
+      console.log('');
+      console.log(`  ${chalk.white('Usage:')}  snapfix ${chalk.green('"npm install"')}`);
+      console.log(`          snapfix ${chalk.green('"pip install tensorflow"')}`);
+      console.log(`          snapfix ${chalk.green('"cargo build"')}`);
+      console.log('');
+      console.log(`  ${chalk.white('Options:')}`);
+      console.log(`    ${chalk.yellow('-i')}              Ask before each fix (default: auto-fix)`);
+      console.log(`    ${chalk.yellow('--ai ollama')}     Free local AI (default)`);
+      console.log(`    ${chalk.yellow('--ai groq')}       Free cloud AI`);
+      console.log(`    ${chalk.yellow('--dry-run')}       Show fixes without applying`);
+      console.log('');
       return;
     }
 
@@ -32,21 +43,20 @@ program
 
     try {
       const session = await debugLoop(command, {
-        auto: opts.auto || false,
+        auto: !opts.interactive,
         maxLoops: parseInt(opts.maxLoops, 10),
         ai: opts.ai || '',
         model: opts.model || '',
         key: opts.key || '',
-        report: opts.report || false,
+        report: true,
         verbose: opts.verbose || false,
         dryRun: opts.dryRun || false,
         timeout: parseInt(opts.timeout, 10),
       });
 
-      // Exit with appropriate code
       process.exit(session.status === 'success' ? 0 : 1);
     } catch (err: any) {
-      console.error(chalk.red(`\n  Fatal error: ${err.message}`));
+      console.error(chalk.red(`\n  Fatal: ${err.message}`));
       process.exit(1);
     }
   });
@@ -56,7 +66,7 @@ const configCmd = program.command('config').description('Manage configuration');
 
 configCmd
   .command('set <key> <value>')
-  .description('Set a config value (e.g., ai.apiKey, ai.provider, loop.maxLoops)')
+  .description('Set a config value (e.g., ai.provider, ai.apiKey)')
   .action((key: string, value: string) => {
     setConfigValue(key, value);
     console.log(chalk.green(`  Set ${key} = ${value}`));
@@ -76,7 +86,7 @@ configCmd
 
 configCmd
   .command('show')
-  .description('Show all config (keys masked)')
+  .description('Show all config')
   .action(() => {
     const config = loadConfig();
     const display = JSON.parse(JSON.stringify(config));
@@ -85,23 +95,22 @@ configCmd
   });
 
 // Report subcommand
-const reportCmd = program.command('report').description('Manage debug reports');
+const reportCmd = program.command('report').description('View past debug sessions');
 
 reportCmd
   .command('list')
-  .description('List past debug sessions')
+  .description('List past sessions')
   .action(() => {
     const config = loadConfig();
     const reports = listReports(config.report.dir);
     if (reports.length === 0) {
-      console.log(chalk.dim('  No reports yet. Run a debug session first.'));
+      console.log(chalk.dim('  No reports yet.'));
       return;
     }
     console.log('');
-    console.log(`  ${chalk.bold('ID')}        ${chalk.bold('Date')}                  ${chalk.bold('Status')}    ${chalk.bold('Command')}`);
     for (const r of reports.slice(0, 20)) {
-      const statusColor = r.status === 'success' ? chalk.green : r.status === 'aborted' ? chalk.yellow : chalk.red;
-      console.log(`  ${r.id}  ${r.date.padEnd(22)}  ${statusColor(r.status.padEnd(10))}${r.command}`);
+      const icon = r.status === 'success' ? '✅' : r.status === 'aborted' ? '⚠️' : '❌';
+      console.log(`  ${icon} ${r.date}  ${r.command}`);
     }
     console.log('');
   });

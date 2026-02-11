@@ -7,7 +7,7 @@ const MAX_BUFFER_LINES = 500;
 export async function runCommand(
   command: string,
   timeout: number = 300_000,
-  onData?: (data: string) => void
+  options?: { quiet?: boolean; onData?: (data: string) => void }
 ): Promise<RunResult> {
   return new Promise((resolve) => {
     const startTime = Date.now();
@@ -15,10 +15,11 @@ export async function runCommand(
     const stderrLines: string[] = [];
     let killed = false;
     let timedOut = false;
+    const quiet = options?.quiet ?? false;
+    const onData = options?.onData;
 
-    // Parse command into shell execution
     const proc = spawn('bash', ['-c', command], {
-      env: { ...process.env, FORCE_COLOR: '1' },
+      env: { ...process.env, FORCE_COLOR: '0' },
       stdio: ['inherit', 'pipe', 'pipe'],
       cwd: process.cwd(),
     });
@@ -34,7 +35,7 @@ export async function runCommand(
 
     proc.stdout?.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
-      process.stdout.write(text);
+      if (!quiet) process.stdout.write(text);
       const clean = stripAnsi(text);
       const lines = clean.split('\n').filter(Boolean);
       stdoutLines.push(...lines);
@@ -46,7 +47,7 @@ export async function runCommand(
 
     proc.stderr?.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
-      process.stderr.write(text);
+      if (!quiet) process.stderr.write(text);
       const clean = stripAnsi(text);
       const lines = clean.split('\n').filter(Boolean);
       stderrLines.push(...lines);
@@ -91,5 +92,5 @@ export async function runFixCommand(
   command: string,
   timeout: number = 120_000
 ): Promise<RunResult> {
-  return runCommand(command, timeout);
+  return runCommand(command, timeout, { quiet: true });
 }
