@@ -477,7 +477,7 @@
                 <div class="pricing-card pricing-featured">
                     <div class="pricing-badge">Most Popular</div>
                     <h3>Founding Pro</h3>
-                    <div class="price">$49</div>
+                    <div class="price">$29</div>
                     <div class="price-sub">lifetime access</div>
                     <div class="price-old">$19/mo after founding closes</div>
                     <ul class="pricing-features">
@@ -494,9 +494,9 @@
                 <div class="pricing-card">
                     <div class="pricing-badge" style="background:linear-gradient(135deg,#34D399,#059669)">Best Value</div>
                     <h3>Founding Team</h3>
-                    <div class="price">$149</div>
+                    <div class="price">$99</div>
                     <div class="price-sub">lifetime / 5 seats</div>
-                    <div class="price-old">$49/seat/mo after founding closes</div>
+                    <div class="price-old">$29/seat/mo after founding closes</div>
                     <ul class="pricing-features">
                         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Everything in Pro</li>
                         <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Team dashboard + analytics</li>
@@ -648,18 +648,21 @@
     }
 
     // Waitlist signup -> redirect to confirmed.html
-    function handleSignup(e) {
+    async function handleSignup(e) {
         e.preventDefault();
+        const btn = e.target.querySelector('button');
         const email = e.target.querySelector('input[type="email"]').value;
+        btn.textContent = 'Joining...';
+        btn.disabled = true;
         sessionStorage.setItem('snapfix_email', email);
-        // POST to API, redirect regardless of outcome (graceful degradation)
-        fetch('/api/waitlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-        }).catch(() => {}).finally(() => {
-            window.location.href = 'confirmed.html';
-        });
+        try {
+            await fetch('/api/waitlist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+        } catch(err) { /* graceful degradation */ }
+        window.location.href = 'confirmed.html';
     }
 
     // Smooth scroll
