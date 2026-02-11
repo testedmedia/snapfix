@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF7C47"/>
+      <stop offset="100%" stop-color="#E64516"/>
+    </linearGradient>
+    <linearGradient id="iconFill" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F2EDE8"/>
+    </linearGradient>
+    <filter id="iconGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000015"/>
+    </filter>
+  </defs>
+
+  <!-- Background with subtle inner border -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96" fill="url(#bg)"/>
+  <rect x="18" y="18" width="476" height="476" rx="94" ry="94" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.08"/>
+
+  <!-- Top specular highlight for glass effect -->
+  <path d="M112 16 L400 16 Q496 16 496 112 L496 140 Q370 175 16 140 L16 112 Q16 16 112 16 Z" fill="#FFFFFF" opacity="0.06"/>
+
+  <g filter="url(#iconGlow)">
+    <!-- Terminal chevron > : secondary element, anchors "CLI" concept -->
+    <path d="
+      M 88 156
+      L 122 124
+      L 226 236
+      L 226 276
+      L 122 388
+      L 88 356
+      L 178 256
+      Z
+    " fill="url(#iconFill)" opacity="0.35"/>
+
+    <!--
+      Lightning bolt: primary mark.
+      Narrower, sharper, centered better in right-center of canvas.
+      Slight overlap with chevron tip creates unified composition.
+    -->
+    <path d="
+      M 308 82
+      L 234 234
+      L 284 234
+      L 212 430
+      L 224 430
+      L 374 210
+      L 314 210
+      L 372 82
+      Z
+    " fill="url(#iconFill)"/>
+  </g>
+</svg>
