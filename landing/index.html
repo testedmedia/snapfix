@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapFix - Stop screenshotting errors into ChatGPT</title>
+    <meta name="description" content="Automate CLI error debugging with AI. One command replaces 40 screenshots. Works with npm, pip, brew, docker, and more.">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #E55A28;
+            --bg: #0D1117;
+            --bg-elevated: #161B22;
+            --bg-card: #1C2128;
+            --text: #E6EDF3;
+            --text-muted: #8B949E;
+            --border: #30363D;
+            --success: #3FB950;
+            --error: #F85149;
+            --warning: #FFA657;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+            background: rgba(13, 17, 23, 0.95);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary) 0%, #FF8F6B 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .nav {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .nav a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+
+        .nav a:hover {
+            color: var(--text);
+        }
+
+        .nav .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--text) 0%, var(--text-muted) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subhead {
+            font-size: 22px;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin: 0 auto 48px;
+            line-height: 1.5;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 64px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+            border-color: var(--text-muted);
+        }
+
+        /* Terminal Animation */
+        .terminal-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            perspective: 1000px;
+        }
+
+        .terminal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
+            transform: rotateX(2deg);
+        }
+
+        .terminal-header {
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #FF5F56; }
+        .dot-yellow { background: #FFBD2E; }
+        .dot-green { background: #27C93F; }
+
+        .terminal-body {
+            padding: 24px;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            min-height: 320px;
+        }
+
+        .terminal-line {
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-line.command { color: var(--text); }
+        .terminal-line.error { color: var(--error); }
+        .terminal-line.warning { color: var(--warning); }
+        .terminal-line.success { color: var(--success); }
+        .terminal-line.info { color: #58A6FF; }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.5s; }
+        .terminal-line:nth-child(2) { animation-delay: 1.5s; }
+        .terminal-line:nth-child(3) { animation-delay: 2.5s; }
+        .terminal-line:nth-child(4) { animation-delay: 3.5s; }
+        .terminal-line:nth-child(5) { animation-delay: 4.5s; }
+        .terminal-line:nth-child(6) { animation-delay: 5.5s; }
+        .terminal-line:nth-child(7) { animation-delay: 6.5s; }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--primary);
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Problem Section */
+        .problem {
+            padding: 120px 0;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 48px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .section-subtitle {
+            font-size: 20px;
+            color: var(--text-muted);
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 64px;
+        }
+
+        .problem-cycle {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            max-width: 900px;
+            margin: 0 auto 48px;
+        }
+
+        .cycle-step {
+            background: var(--bg-card);
+            padding: 24px 16px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .cycle-step:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .cycle-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            line-height: 32px;
+            margin-bottom: 12px;
+        }
+
+        .cycle-text {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .problem-stats {
+            text-align: center;
+            margin-top: 48px;
+        }
+
+        .stat-highlight {
+            font-size: 56px;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .stat-text {
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 120px 0;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+        }
+
+        .step {
+            position: relative;
+            padding: 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .step:hover {
+            border-color: var(--primary);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.2);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -16px;
+            left: 32px;
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
+        }
+
+        .step h3 {
+            font-size: 24px;
+            margin: 16px 0 12px;
+        }
+
+        .step p {
+            color: var(--text-muted);
+            font-size: 15px;
+        }
+
+        .step code {
+            display: block;
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: 'Menlo', monospace;
+            font-size: 13px;
+            color: var(--primary);
+            margin-top: 16px;
+            border: 1px solid var(--border);
+        }
+
+        /* Features Grid */
+        .features {
+            padding: 120px 0;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+        }
+
+        .feature {
+            padding: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .feature:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary) 0%, #FF8F6B 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        .feature h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .feature p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* Before/After */
+        .before-after {
+            padding: 120px 0;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+        }
+
+        .comparison-card {
+            padding: 48px;
+            border-radius: 12px;
+            border: 2px solid;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .comparison-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+        }
+
+        .before {
+            border-color: rgba(248, 81, 73, 0.3);
+            background: rgba(248, 81, 73, 0.05);
+        }
+
+        .before::before {
+            background: var(--error);
+        }
+
+        .after {
+            border-color: rgba(63, 185, 80, 0.3);
+            background: rgba(63, 185, 80, 0.05);
+        }
+
+        .after::before {
+            background: var(--success);
+        }
+
+        .comparison-label {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            opacity: 0.7;
+        }
+
+        .comparison-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            line-height: 1.2;
+        }
+
+        .comparison-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+        }
+
+        .stat-icon {
+            font-size: 20px;
+        }
+
+        /* Pricing */
+        .pricing {
+            padding: 120px 0;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 64px;
+        }
+
+        .pricing-card {
+            padding: 48px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-8px);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -12px;
+            right: 32px;
+            background: var(--primary);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .pricing-card h3 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .pricing-card .price {
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 16px 0;
+        }
+
+        .pricing-card .price-period {
+            font-size: 18px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin: 32px 0;
+        }
+
+        .pricing-features li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pricing-features li:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: var(--success);
+            font-size: 18px;
+        }
+
+        /* Waitlist */
+        .waitlist {
+            padding: 120px 0;
+        }
+
+        .waitlist-content {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .waitlist-form {
+            display: flex;
+            gap: 12px;
+            margin-top: 48px;
+            flex-wrap: wrap;
+        }
+
+        .waitlist-input {
+            flex: 1;
+            min-width: 250px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .waitlist-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .waitlist-privacy {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            padding: 80px 0 40px;
+            background: var(--bg-elevated);
+            border-top: 1px solid var(--border);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-bottom: 40px;
+        }
+
+        .footer-tagline {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 400px;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text);
+        }
+
+        .footer-bottom {
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Copy Notification */
+        .copy-notification {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--success);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+
+        .copy-notification.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 40px;
+            }
+
+            .hero .subhead {
+                font-size: 18px;
+            }
+
+            .section-title {
+                font-size: 36px;
+            }
+
+            .terminal-body {
+                font-size: 12px;
+                padding: 16px;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                gap: 16px;
+            }
+
+            .nav a span {
+                display: none;
+            }
+
+            .waitlist-form {
+                flex-direction: column;
+            }
+
+            .waitlist-input {
+                width: 100%;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-tagline {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="#" class="logo">
+                    <div class="logo-icon">🔁</div>
+                    SnapFix
+                </a>
+                <nav class="nav">
+                    <a href="#features"><span>Features</span></a>
+                    <a href="#pricing"><span>Pricing</span></a>
+                    <a href="https://github.com/snapfix/snapfix" class="github-link" target="_blank">
+                        <span>GitHub</span>
+                        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Stop screenshotting errors<br>into ChatGPT</h1>
+            <p class="subhead">SnapFix wraps any CLI command and auto-fixes errors with AI. One command. Zero manual copy-pasting.</p>
+
+            <div class="cta-group">
+                <button class="btn btn-primary" onclick="copyToClipboard('npm install -g snapfix')">
+                    <span>npm install -g snapfix</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                </button>
+                <a href="#waitlist" class="btn btn-secondary">Join waitlist for Pro</a>
+            </div>
+
+            <div class="terminal-wrapper">
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <div class="terminal-dot dot-red"></div>
+                        <div class="terminal-dot dot-yellow"></div>
+                        <div class="terminal-dot dot-green"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line command">$ npm install</div>
+                        <div class="terminal-line error">npm ERR! gyp ERR! find Python
+npm ERR! gyp ERR! Could not find any Python installation to use</div>
+                        <div class="terminal-line warning">snapfix > Error detected (92% confidence)</div>
+                        <div class="terminal-line success">snapfix > Fix: brew install python3</div>
+                        <div class="terminal-line info">snapfix > Applying fix...</div>
+                        <div class="terminal-line info">snapfix > Re-running npm install...</div>
+                        <div class="terminal-line success">✓ Success after 3 loops (2m 14s)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem">
+        <div class="container">
+            <h2 class="section-title">The screenshot-paste loop from hell</h2>
+            <p class="section-subtitle">Every developer knows this pain. An installation fails. You manually debug for 40+ minutes.</p>
+
+            <div class="problem-cycle">
+                <div class="cycle-step">
+                    <div class="cycle-number">1</div>
+                    <div class="cycle-text">Run command</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">2</div>
+                    <div class="cycle-text">Error appears</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">3</div>
+                    <div class="cycle-text">Screenshot</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">4</div>
+                    <div class="cycle-text">Paste to AI</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">5</div>
+                    <div class="cycle-text">Read fix</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">6</div>
+                    <div class="cycle-text">Apply fix</div>
+                </div>
+                <div class="cycle-step">
+                    <div class="cycle-number">7</div>
+                    <div class="cycle-text">Repeat 20x</div>
+                </div>
+            </div>
+
+            <div class="problem-stats">
+                <span class="stat-highlight">20-40 times</span>
+                <p class="stat-text">You do this per failed installation</p>
+            </div>
+
+            <div class="problem-stats" style="margin-top: 32px;">
+                <h3 style="font-size: 32px; margin-bottom: 16px;">SnapFix does it in one command</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title">How it works</h2>
+            <p class="section-subtitle">Four steps from error to success. Fully automated or one-click approve mode.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Wrap your command</h3>
+                    <p>Prefix any CLI command with snapfix. Works with npm, pip, brew, docker, cargo, go, and everything else.</p>
+                    <code>snapfix npm install</code>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>AI analyzes errors</h3>
+                    <p>Full context sent automatically: error logs, OS version, installed dependencies, environment variables.</p>
+                    <code>Detected: Missing Python 3.8+</code>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Apply fixes automatically</h3>
+                    <p>One-click approve mode or fully automatic with --auto flag. You stay in control.</p>
+                    <code>snapfix npm install --auto</code>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Success</h3>
+                    <p>Get a shareable debug report showing every error, fix applied, and total time saved.</p>
+                    <code>✓ Fixed in 2m 14s (3 loops)</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <h2 class="section-title">Built for every workflow</h2>
+            <p class="section-subtitle">Cross-platform, AI-agnostic, open source. Works everywhere you do.</p>
+
+            <div class="features-grid">
+                <div class="feature">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Works with everything</h3>
+                    <p>npm, pip, brew, docker, cargo, go, apt, yarn, pnpm, poetry, bundle, and any other CLI tool.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Any AI provider</h3>
+                    <p>Claude, GPT-4, or free local Ollama. Switch providers instantly. Your data, your choice.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <h3>Smart error detection</h3>
+                    <p>50+ error patterns recognized. Context-aware fixes. Learns from your environment.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Debug reports</h3>
+                    <p>Shareable markdown reports. Perfect for bug reports, documentation, or helping teammates.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Auto-apply mode</h3>
+                    <p>Add --auto flag for zero-interaction debugging. Perfect for CI/CD pipelines.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🔓</div>
+                    <h3>Open source</h3>
+                    <p>MIT license. Fork it, extend it, audit it. Community-driven development.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Before/After -->
+    <section class="before-after">
+        <div class="container">
+            <h2 class="section-title">The difference is dramatic</h2>
+            <p class="section-subtitle">Stop wasting time on manual debugging. Get back to building.</p>
+
+            <div class="comparison">
+                <div class="comparison-card before">
+                    <div class="comparison-label">Before SnapFix</div>
+                    <div class="comparison-title">47 minutes<br>23 screenshots<br>Mass frustration</div>
+                    <div class="comparison-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">📸</span>
+                            <span>Screenshot every error</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">📋</span>
+                            <span>Copy-paste fixes manually</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🔄</span>
+                            <span>Repeat 20-40 times</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">😤</span>
+                            <span>Context switching kills flow</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-card after">
+                    <div class="comparison-label">After SnapFix</div>
+                    <div class="comparison-title">3 minutes<br>1 command<br>Done</div>
+                    <div class="comparison-stats">
+                        <div class="stat-item">
+                            <span class="stat-icon">⚡</span>
+                            <span>Fully automated loop</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🎯</span>
+                            <span>Context-aware fixes</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">✅</span>
+                            <span>One command, zero screenshots</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-icon">🚀</span>
+                            <span>Stay in flow state</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <h2 class="section-title">Simple, honest pricing</h2>
+            <p class="section-subtitle">Start free. Upgrade when you need more power.</p>
+
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="price">$0<span class="price-period">/month</span></div>
+                    <ul class="pricing-features">
+                        <li><span class="check-icon">✓</span> 5 loops per day</li>
+                        <li><span class="check-icon">✓</span> Local debug reports</li>
+                        <li><span class="check-icon">✓</span> Ollama support</li>
+                        <li><span class="check-icon">✓</span> All CLI tools</li>
+                        <li><span class="check-icon">✓</span> Open source</li>
+                    </ul>
+                    <button class="btn btn-secondary" onclick="copyToClipboard('npm install -g snapfix')" style="width: 100%;">Get started</button>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-badge">Coming soon</div>
+                    <h3>Pro</h3>
+                    <div class="price">$15<span class="price-period">/month</span></div>
+                    <ul class="pricing-features">
+                        <li><span class="check-icon">✓</span> Unlimited loops</li>
+                        <li><span class="check-icon">✓</span> Claude & GPT support</li>
+                        <li><span class="check-icon">✓</span> Shareable reports</li>
+                        <li><span class="check-icon">✓</span> No watermark</li>
+                        <li><span class="check-icon">✓</span> Priority support</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary" style="width: 100%; text-align: center;">Join waitlist</a>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-badge">Coming soon</div>
+                    <h3>Team</h3>
+                    <div class="price">$39<span class="price-period">/seat/month</span></div>
+                    <ul class="pricing-features">
+                        <li><span class="check-icon">✓</span> Everything in Pro</li>
+                        <li><span class="check-icon">✓</span> Team dashboard</li>
+                        <li><span class="check-icon">✓</span> Custom playbooks</li>
+                        <li><span class="check-icon">✓</span> CI/CD integration</li>
+                        <li><span class="check-icon">✓</span> Usage analytics</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary" style="width: 100%; text-align: center;">Join waitlist</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Waitlist -->
+    <section class="waitlist" id="waitlist">
+        <div class="container">
+            <div class="waitlist-content">
+                <h2 class="section-title">Get early access to Pro</h2>
+                <p class="section-subtitle">Be the first to know when we launch. Limited spots available.</p>
+
+                <form class="waitlist-form" onsubmit="handleWaitlistSubmit(event)">
+                    <input
+                        type="email"
+                        class="waitlist-input"
+                        placeholder="your@email.com"
+                        required
+                    >
+                    <button type="submit" class="btn btn-primary">Join waitlist</button>
+                </form>
+
+                <p class="waitlist-privacy">No spam. Just launch updates. Unsubscribe anytime.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-tagline">
+                    Built for developers who hate screenshotting errors
+                </div>
+                <div class="footer-links">
+                    <a href="https://github.com/snapfix/snapfix" target="_blank">
+                        <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                        </svg>
+                        GitHub
+                    </a>
+                    <a href="https://twitter.com/snapfix" target="_blank">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                        Twitter
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                Copyright © 2026 SnapFix. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Copy Notification -->
+    <div class="copy-notification" id="copyNotification">
+        ✓ Copied to clipboard!
+    </div>
+
+    <script>
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                const notification = document.getElementById('copyNotification');
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            });
+        }
+
+        function handleWaitlistSubmit(event) {
+            event.preventDefault();
+            const email = event.target.querySelector('input[type="email"]').value;
+
+            // Placeholder for actual form submission
+            // Replace with your actual endpoint
+            console.log('Waitlist signup:', email);
+
+            alert('Thanks for joining the waitlist! We\'ll be in touch soon.');
+            event.target.reset();
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Terminal animation loop
+        setInterval(() => {
+            const lines = document.querySelectorAll('.terminal-line');
+            lines.forEach(line => {
+                line.style.animation = 'none';
+                line.offsetHeight; // Trigger reflow
+                line.style.animation = null;
+            });
+        }, 8000);
+    </script>
+</body>
+</html>
