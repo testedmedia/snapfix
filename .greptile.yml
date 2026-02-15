@@ -1,0 +1,26 @@
+focus:
+  - security
+  - correctness
+  - performance
+
+critical_paths:
+  - "api/**"
+  - "lib/**"
+  - "scripts/**"
+
+ignore:
+  - "*.test.ts"
+  - "node_modules/**"
+  - "public/**"
+
+rules:
+  - name: "No exposed secrets"
+    pattern: "(sk-|ghp_|Bearer |AKIA|password\\s*=)"
+    severity: critical
+    message: "Potential secret detected in code"
+
+  - name: "No console.log in production"
+    pattern: "console\\.log\\("
+    paths: "api/**"
+    severity: info
+    message: "Remove console.log before deploy"
